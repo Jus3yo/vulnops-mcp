@@ -2,12 +2,11 @@
 
 from typing import Any
 
-from mcp.server.mcpserver import MCPServer
-
 from vulnops_mcp import __version__
 from vulnops_mcp.auth import AzureCliTokenProvider
 from vulnops_mcp.config import Settings
 from vulnops_mcp.connectivity import run_whoami
+from vulnops_mcp.tools.registry import ToolContext
 
 
 def server_info(settings: Settings) -> dict[str, Any]:
@@ -24,15 +23,17 @@ def server_info(settings: Settings) -> dict[str, Any]:
     }
 
 
-def register(server: MCPServer, settings: Settings) -> None:
-    @server.tool(name="vulnops_server_info")
+def register(ctx: ToolContext) -> None:
+    settings = ctx.settings
+
+    @ctx.read_tool("vulnops_server_info")
     def vulnops_server_info() -> dict[str, Any]:
         """Show the server version, which services are configured, whether write tools
         are enabled, the allowed resource groups and the honeypot skip rules.
         Call this first in a session."""
         return server_info(settings)
 
-    @server.tool(name="vulnops_whoami")
+    @ctx.read_tool("vulnops_whoami")
     async def vulnops_whoami() -> dict[str, Any]:
         """Connectivity check. Shows who you are signed in as (your az login) and tests each
         service separately: Azure Resource Manager, Log Analytics, Defender for Endpoint

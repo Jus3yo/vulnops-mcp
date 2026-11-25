@@ -2,8 +2,11 @@
 
 from mcp.server.mcpserver import MCPServer
 
+from vulnops_mcp.audit import AuditLog
 from vulnops_mcp.config import Settings, get_settings
+from vulnops_mcp.safety import SafetyGuard
 from vulnops_mcp.tools import meta
+from vulnops_mcp.tools.registry import ToolContext
 
 INSTRUCTIONS = (
     "VulnOps MCP automates vulnerability management across Azure VMs, Tenable, "
@@ -13,12 +16,18 @@ INSTRUCTIONS = (
 )
 
 
-def build_server(settings: Settings | None = None) -> MCPServer:
+def build_server(settings: Settings | None = None, audit: AuditLog | None = None) -> MCPServer:
     settings = settings or get_settings()
     server: MCPServer = MCPServer(
         name="vulnops-mcp",
         instructions=INSTRUCTIONS,
         log_level=settings.vulnops_log_level.upper(),  # type: ignore[arg-type]
     )
-    meta.register(server, settings)
+    ctx = ToolContext(
+        server=server,
+        settings=settings,
+        guard=SafetyGuard(settings),
+        audit=audit or AuditLog(settings.vulnops_audit_log),
+    )
+    meta.register(ctx)
     return server

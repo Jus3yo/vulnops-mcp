@@ -20,7 +20,7 @@ MCP client ──stdio──▶ server.py ─▶ tools/<service>.py ─▶ workf
 ## 2. Hard constraints (never break these)
 
 1. **No secrets in git, code, tests, logs or tool output.** Secrets come only from env / `.env`. `.env` is never read, printed, edited or committed by the agent. Use `.env.example` for new keys, with empty values.
-2. **Every write tool goes through `safety.require_write()`** and returns a preview + `confirm_token` on the first call. Never add a write path that skips it, and never auto-confirm.
+2. **Every write tool is registered with `ctx.write_tool(...)` and calls `ctx.guard.require_write()`** and returns a preview + `confirm_token` on the first call. Never add a write path that skips it, and never auto-confirm.
 3. **Honeypot VMs are never scanned, changed or isolated.** Respect `VULNOPS_HONEYPOT_NAME_PATTERNS` and the `vulnops:skip=true` / `role=honeypot` tags, including Tenable target IPs.
 4. **Only resource groups in `VULNOPS_ALLOWED_RESOURCE_GROUPS`** are visible or actionable.
 5. **No live API calls in unit tests or CI.** Mock HTTP with `respx`. Live tests are marked `@pytest.mark.live` and only run when the user asks.
@@ -97,7 +97,7 @@ vulnops-mcp/
 └── reports/                  # generated reports (git-ignored)
 ```
 
-New tool module checklist: create `tools/<service>.py` with `register()`, call it from `server.build_server()`, add tests, add the tools to the catalog in `docs/SolutionDesign.md` if they changed.
+New tool module checklist: create `tools/<service>.py` with `register(ctx: ToolContext)` that uses `ctx.read_tool(name)` / `ctx.write_tool(name)` (never `server.tool` directly, so audit and write gating are automatic), call it from `server.build_server()`, add tests, add the tools to the catalog in `docs/SolutionDesign.md` if they changed.
 
 ## 7. Workflow for the agent
 

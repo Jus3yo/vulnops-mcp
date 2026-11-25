@@ -30,10 +30,10 @@ To answer it, an agent reads the **Status** block below, the **Session Log** at 
 | | |
 |---|---|
 | **Current phase** | Phase 2: Connectivity (whoami) and foundations |
-| **Current task** | CP2: run `uv run vulnops-mcp --whoami` live and record the result |
-| **Last completed** | 2.3 `vulnops_whoami` tool (code + tests, 99% coverage) |
-| **Next up** | Record whoami result under CP2 → 2.4 `safety.py` → 2.5 `audit.py` → 2.6 Claude Desktop |
-| **Blockers** | None. `az login` done. Tenable keys and `AZURE_SUBSCRIPTION_IDS` must be in `.env` for a full CP2 result. |
+| **Current task** | 2.6 Register the server in Claude Desktop and call `vulnops_whoami` from chat |
+| **Last completed** | 2.4 `safety.py` and 2.5 `audit.py` (100% coverage); live whoami all ok |
+| **Next up** | 2.6 Claude Desktop → close CP2 → Phase 3, task 3.1 Azure compute client |
+| **Blockers** | None |
 | **Last updated** | 2026-11-25 |
 
 ## Phase overview
@@ -88,15 +88,15 @@ Goal: prove every API is reachable with the agreed auth **before** building serv
   - Log Analytics: token + query `print ok=1`
   - Defender: token for `api.securitycenter.microsoft.com` + `GET /api/machines?$top=1`
   - Tenable: `GET /session` (shows the Tenable user)
-- [ ] 2.4 `safety.py`: `require_write()` with preview + single-use `confirm_token` (5 min TTL, bound to tool name + args hash); RG allow-list; honeypot matcher (name globs, tags, IPs). Write tools hidden when `VULNOPS_ALLOW_WRITES=false`. 100% coverage.
-- [ ] 2.5 `audit.py`: JSONL audit log with run ID, tool, redacted args, outcome, duration; wired into every tool call. 100% coverage.
+- [x] 2.4 `safety.py`: `require_write()` with preview + single-use `confirm_token` (5 min TTL, bound to tool name + args hash); RG allow-list; honeypot matcher (name globs, tags, IPs). Write tools hidden when `VULNOPS_ALLOW_WRITES=false`. 100% coverage.
+- [x] 2.5 `audit.py`: JSONL audit log with run ID, tool, redacted args, outcome, duration; wired into every tool call. 100% coverage.
 - [ ] 2.6 Register the server in Claude Desktop on the user's machine; README steps verified on Windows.
 
 **CP2: Connectivity (whoami) and foundations**
 - [ ] Server starts from Claude Desktop with the user's `az login`.
-- [ ] `vulnops_whoami` result recorded here for ARM / Log Analytics / Defender / Tenable.
-- [ ] Any failure has its verbatim error recorded and a chosen fallback (Defender: Advanced Hunting tables via Log Analytics, or app registration; Tenable: regenerate keys).
-- [ ] `safety.py` and `audit.py` at 100% coverage; CI green.
+- [x] `vulnops_whoami` live result (2026-11-25, `overall: ok`): ARM ok (both configured subscriptions visible), Log Analytics ok (test query returned 1 row), Defender ok via az login token (no consent problem, no fallback needed), Tenable ok (own API keys).
+- [x] Failures and fallbacks: first run showed Log Analytics `not_configured` with no workspaces discoverable (the account has no Reader on the workspace resource). Fixed by setting `LOG_ANALYTICS_WORKSPACE_ID` directly; queries only need the ID.
+- [x] `safety.py` and `audit.py` at 100% coverage (65 tests, 99% overall). CI runs once the repo is on GitHub.
 
 ## Phase 3: Azure VM tools
 
@@ -181,5 +181,6 @@ Newest first. One line per session: date, what was done, where it stopped.
 
 | Date | Phase / task | Summary |
 |---|---|---|
+| 2026-11-25 | Phase 2, 2.4–2.5 | Live whoami all ok (recorded under CP2). Added `safety.py` (approval tokens, RG allow-list, honeypot skip), `audit.py` (JSONL, redaction) and `tools/registry.py` (`read_tool` / `write_tool` so audit and gating are automatic). 65 tests. Next: 2.6 Claude Desktop. |
 | 2026-11-25 | Phase 2, 2.1–2.3 | Auth (`AzureCliTokenProvider`, Tenable headers), shared `ApiClient` (retries on reads only, verbatim error mapping) and `vulnops_whoami` built and tested (39 tests, 99%). Next: run whoami live for CP2, then 2.4 safety. |
 | 2026-11-25 | Phase 0 → Phase 1 | Solution design written and agreed (az login, local stdio, approval on every write, honeypot skip, whoami first checkpoint). Scaffolding built and committed; CP0 and CP1 passed. Next: 2.1 auth module. |
