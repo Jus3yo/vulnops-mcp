@@ -108,7 +108,7 @@ One `AzureCliCredential` is created at startup and reused, with a different scop
 | Defender for Endpoint | `https://api.securitycenter.microsoft.com/.default` |
 | Log Analytics (KQL) | `https://api.loganalytics.io/.default` |
 
-Operator setup: `az login --tenant <tenant-id>` and `az account set --subscription <subscription-id>` before starting the MCP client. When the CLI session expires, tools return an `AuthError` that says to run `az login` again.
+Operator setup: `az login` before starting the MCP client. The subscriptions to manage are listed in `AZURE_SUBSCRIPTION_IDS` (comma-separated, more than one is supported), so the server does not depend on the CLI's default subscription. When the CLI session expires, tools return an `AuthError` that says to run `az login` again.
 
 Known risk, verified at CP2 by `vulnops_whoami`: the Azure CLI's first-party app may not be consented for the Defender for Endpoint API (`api.securitycenter.microsoft.com`) in the range tenant, so the token request or the first call can fail (typically `AADSTS65001` consent required, or a 401/403). Fallbacks, in order:
 

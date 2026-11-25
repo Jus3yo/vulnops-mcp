@@ -30,10 +30,10 @@ To answer it, an agent reads the **Status** block below, the **Session Log** at 
 | | |
 |---|---|
 | **Current phase** | Phase 2: Connectivity (whoami) and foundations |
-| **Current task** | 2.1 Auth module (`AzureCliCredential` + Tenable keys) |
-| **Last completed** | Phase 1, task 1.7 (scaffolding committed, CP1 passed) |
-| **Next up** | 2.1 → 2.2 → 2.3 `vulnops_whoami` |
-| **Blockers** | None. Needs: user runs `az login` and puts Tenable keys in `.env` before CP2. |
+| **Current task** | CP2: run `uv run vulnops-mcp --whoami` live and record the result |
+| **Last completed** | 2.3 `vulnops_whoami` tool (code + tests, 99% coverage) |
+| **Next up** | Record whoami result under CP2 → 2.4 `safety.py` → 2.5 `audit.py` → 2.6 Claude Desktop |
+| **Blockers** | None. `az login` done. Tenable keys and `AZURE_SUBSCRIPTION_IDS` must be in `.env` for a full CP2 result. |
 | **Last updated** | 2026-11-25 |
 
 ## Phase overview
@@ -42,7 +42,7 @@ To answer it, an agent reads the **Status** block below, the **Session Log** at 
 |---|---|---|---|
 | 0 | Solution design | CP0 Design approved | ✅ Done |
 | 1 | Project scaffolding | CP1 Scaffolding complete | ✅ Done |
-| 2 | Connectivity (whoami) and foundations | CP2 Every service reachable or failure understood | ⏳ Next |
+| 2 | Connectivity (whoami) and foundations | CP2 Every service reachable or failure understood | ⏳ In progress |
 | 3 | Azure VM tools | CP3 VM reads + approved writes on lab VM | ⬜ |
 | 4 | Tenable tools | CP4 Scan created, launched, results read | ⬜ |
 | 5 | Defender for Endpoint tools | CP5 Machine vulns + hunting query | ⬜ |
@@ -81,9 +81,9 @@ To answer it, an agent reads the **Status** block below, the **Session Log** at 
 
 Goal: prove every API is reachable with the agreed auth **before** building service tools, and put the safety rails in place.
 
-- [ ] 2.1 `auth.py`: one shared `AzureCliCredential`; `get_token(scope)` per API (ARM, Defender, Log Analytics); Tenable `X-ApiKeys` header builder. Map credential failures to `AuthError` with the original message kept verbatim.
-- [ ] 2.2 `clients/base.py`: async `httpx` base client (auth header hook, timeouts, retry with backoff on 429/5xx for reads only, `Retry-After`, error mapping to `errors.*` keeping status + body message).
-- [ ] 2.3 `vulnops_whoami` tool: tests each service **separately** and reports per service `ok` / `error` with the verbatim upstream error:
+- [x] 2.1 `auth.py`: one shared `AzureCliCredential`; `get_token(scope)` per API (ARM, Defender, Log Analytics); Tenable `X-ApiKeys` header builder. Map credential failures to `AuthError` with the original message kept verbatim.
+- [x] 2.2 `clients/base.py`: async `httpx` base client (auth header hook, timeouts, retry with backoff on 429/5xx for reads only, `Retry-After`, error mapping to `errors.*` keeping status + body message).
+- [x] 2.3 `vulnops_whoami` tool (also `uv run vulnops-mcp --whoami` from the command line; supports several subscriptions via `AZURE_SUBSCRIPTION_IDS`; lists Log Analytics workspaces if none is configured): tests each service **separately** and reports per service `ok` / `error` with the verbatim upstream error:
   - ARM: token + `GET /subscriptions` (shows signed-in user and subscription)
   - Log Analytics: token + query `print ok=1`
   - Defender: token for `api.securitycenter.microsoft.com` + `GET /api/machines?$top=1`
@@ -181,4 +181,5 @@ Newest first. One line per session: date, what was done, where it stopped.
 
 | Date | Phase / task | Summary |
 |---|---|---|
+| 2026-11-25 | Phase 2, 2.1–2.3 | Auth (`AzureCliTokenProvider`, Tenable headers), shared `ApiClient` (retries on reads only, verbatim error mapping) and `vulnops_whoami` built and tested (39 tests, 99%). Next: run whoami live for CP2, then 2.4 safety. |
 | 2026-11-25 | Phase 0 → Phase 1 | Solution design written and agreed (az login, local stdio, approval on every write, honeypot skip, whoami first checkpoint). Scaffolding built and committed; CP0 and CP1 passed. Next: 2.1 auth module. |

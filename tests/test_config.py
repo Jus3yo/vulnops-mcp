@@ -16,7 +16,7 @@ def test_csv_env_values_are_split(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_secrets_hidden_from_repr() -> None:
-    s = Settings(_env_file=None, tenable_secret_key="supersecret")  # type: ignore[call-arg]  # noqa: S106
+    s = Settings(_env_file=None, tenable_secret_key="supersecret")  # type: ignore[call-arg]
     assert "supersecret" not in repr(s)
 
 
@@ -24,3 +24,10 @@ def test_enabled_services(settings: Settings) -> None:
     services = settings.enabled_services()
     assert services["azure"] is True
     assert services["tenable"] is False
+
+
+def test_subscription_ids_merge_and_dedupe(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("AZURE_SUBSCRIPTION_IDS", "sub-a, sub-b")
+    monkeypatch.setenv("AZURE_SUBSCRIPTION_ID", "sub-a")
+    s = Settings(_env_file=None)  # type: ignore[call-arg]
+    assert s.subscription_ids == ["sub-a", "sub-b"]

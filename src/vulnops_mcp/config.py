@@ -20,6 +20,8 @@ class Settings(BaseSettings):
 
     # Azure (auth uses the operator's own `az login`)
     azure_tenant_id: str | None = None
+    # One or more subscriptions (comma-separated). AZURE_SUBSCRIPTION_ID is also accepted.
+    azure_subscription_ids: Annotated[list[str], NoDecode] = Field(default_factory=list)
     azure_subscription_id: str | None = None
 
     # Log Analytics / Sentinel
@@ -45,17 +47,32 @@ class Settings(BaseSettings):
     vulnops_log_level: str = "INFO"
 
     @field_validator(
-        "vulnops_allowed_resource_groups", "vulnops_honeypot_name_patterns", mode="before"
+        "azure_subscription_ids",
+        "vulnops_allowed_resource_groups",
+        "vulnops_honeypot_name_patterns",
+        mode="before",
     )
     @classmethod
     def _csv(cls, value: object) -> object:
         return _split_csv(value)
 
+    @property
+    def subscription_ids(self) -> list[str]:
+        """All configured subscriptions, de-duplicated, in order."""
+        ids = [*self.azure_subscription_ids]
+        if self.azure_subscription_id:
+            ids.append(self.azure_subscription_id.strip())
+        return list(dict.fromkeys(i for i in ids if i))
+
+    @property
+    def tenable_configured(self) -> bool:
+        return bool(self.tenable_access_key and self.tenable_secret_key)
+
     def enabled_services(self) -> dict[str, bool]:
         """Which integrations have enough configuration to be attempted."""
         return {
-            "azure": self.azure_subscription_id is not None,
-            "tenable": bool(self.tenable_access_key and self.tenable_secret_key),
+            "azure": bool(self.subscription_ids),
+            "tenable": self.tenable_configured,
             "defender": True,  # only needs the operator's az login
             "sentinel": self.log_analytics_workspace_id is not None,
         }

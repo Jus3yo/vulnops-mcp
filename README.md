@@ -26,13 +26,16 @@ uv sync
 
 # 3. Configure
 Copy-Item .env.example .env   # skip if you already have a .env
-notepad .env                  # subscription, resource groups, Tenable keys
+notepad .env                  # subscription IDs, resource groups, Tenable keys
 
 # 4. Sign in
 az login --tenant <tenant-id>
 az account set --subscription <subscription-id>
 
-# 5. Run (normally your MCP client starts it for you)
+# 5. Check connectivity (prints JSON per service, does not start the server)
+uv run vulnops-mcp --whoami
+
+# 6. Run (normally your MCP client starts it for you)
 uv run vulnops-mcp
 ```
 
